@@ -1192,3 +1192,90 @@
   font-size: 15px;
   font-weight: 900;
 }
+
+/* ==========================================================================
+   GAMES & DATABASE MOBILE RESPONSIVE ENHANCEMENTS
+   ========================================================================== */
+
+@media (max-width: 600px) {
+  /* Player Database Grid & Cards */
+  .player-db-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .player-mini-card {
+    padding: 10px 8px !important;
+  }
+
+  .mini-card-avatar {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .mini-card-name {
+    font-size: 12px !important;
+    margin-top: 8px !important;
+  }
+
+  .mini-card-rating .val {
+    font-size: 18px !important;
+  }
+
+  .mini-card-meta {
+    flex-direction: column !important;
+    gap: 2px !important;
+    font-size: 9px !important;
+  }
+
+  .mini-card-meta span {
+    max-width: 100% !important;
+  }
+
+  /* Player Detail Modal */
+  .player-detail-modal-box {
+    padding: 16px 12px !important;
+    width: 95% !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+  }
+
+  .player-detail-card-shell {
+    width: 170px !important;
+    height: 250px !important;
+  }
+
+  /* Wordle Game */
+  .wordle-header-row, .wordle-guess-row {
+    grid-template-columns: 1.5fr repeat(4, 1fr) !important;
+    gap: 4px !important;
+  }
+
+  .wordle-cell {
+    min-height: 52px !important;
+    padding: 6px 2px !important;
+    font-size: 11px !important;
+  }
+
+  .wordle-cell .cell-title {
+    font-size: 8px !important;
+  }
+
+  .wordle-cell .val {
+    font-size: 11px !important;
+  }
+
+  /* Reveal Game */
+  .reveal-player-card {
+    width: 220px !important;
+    height: 330px !important;
+    padding: 14px !important;
+  }
+
+  /* Career Timeline */
+  .career-timeline-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+}
