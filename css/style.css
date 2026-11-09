@@ -902,6 +902,165 @@ header {
   to { transform: scale(1.05); }
 }
 
+/* User Profile & Theme Customizer Modal */
+.profile-customizer-modal-box {
+  max-width: 640px !important;
+  width: 95% !important;
+  padding: 28px !important;
+  text-align: left !important;
+  align-items: stretch !important;
+  gap: 16px !important;
+}
+
+.profile-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-avatar-shell {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 3px solid var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 22px;
+  background: linear-gradient(135deg, #1b263b, #0b0e14);
+  color: #fff;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
+}
+
+.modal-level-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: var(--color-primary);
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--bg-dark);
+}
+
+.profile-header-info {
+  flex-grow: 1;
+}
+
+.profile-header-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+}
+
+.themes-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.themes-selector-grid::-webkit-scrollbar {
+  width: 5px;
+}
+.themes-selector-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.theme-card-option {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.theme-card-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.theme-card-option.active {
+  border-color: var(--color-primary);
+  background: rgba(0, 255, 102, 0.05);
+  box-shadow: 0 0 15px rgba(0, 255, 102, 0.15);
+}
+
+.theme-card-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  position: relative;
+}
+
+.theme-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.theme-action-btn {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 11px;
+  border-radius: 6px;
+  font-family: 'Orbitron', sans-serif;
+  cursor: pointer;
+  border: none;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.theme-action-btn.btn-equipped {
+  background: rgba(0, 255, 102, 0.15);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  cursor: default;
+}
+
+.theme-action-btn.btn-equip {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.theme-action-btn.btn-equip:hover {
+  background: var(--color-primary);
+  color: #000;
+}
+
+.theme-action-btn.btn-buy {
+  background: linear-gradient(135deg, var(--color-gold), #e09f00);
+  color: #000;
+}
+
+.theme-action-btn.btn-buy:hover {
+  filter: brightness(1.1);
+}
+
 /* Floating Confetti system */
 .confetti-container {
   position: fixed;
@@ -1302,18 +1461,19 @@ header {
 }
 
 .login-card {
-  background: rgba(22, 30, 46, 0.85);
+  background: rgba(22, 30, 46, 0.9);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
   width: 100%;
-  max-width: 440px;
-  padding: 40px;
+  max-width: 520px;
+  padding: 32px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 255, 102, 0.15);
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   animation: scaleUpIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
@@ -1407,15 +1567,32 @@ header {
 
 .login-club-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
+  max-height: 270px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.login-club-grid::-webkit-scrollbar {
+  width: 5px;
+}
+.login-club-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+.login-club-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
 }
 
 .club-select-card {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  padding: 12px 6px;
+  padding: 10px 6px;
   cursor: pointer;
   font-size: 11px;
   font-weight: 700;
@@ -1423,31 +1600,72 @@ header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
 }
 
-.club-select-card i {
-  font-size: 20px;
-  color: var(--color-text-muted);
-  transition: transform 0.2s ease;
+.club-logo-wrapper {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.club-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4));
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.club-select-card span {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
 }
 
 .club-select-card:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   border-color: var(--color-secondary);
+  transform: translateY(-2px);
 }
 
-.club-select-card:hover i {
+.club-select-card:hover .club-logo-img {
   transform: scale(1.15);
 }
 
 .club-select-card.selected {
-  background: rgba(0, 255, 102, 0.08);
+  background: rgba(0, 255, 102, 0.12);
   border-color: var(--color-primary);
   color: var(--color-primary);
-  box-shadow: 0 0 12px rgba(0, 255, 102, 0.15);
+  box-shadow: 0 0 16px rgba(0, 255, 102, 0.25);
+  transform: translateY(-2px);
 }
 
-.club-select-card.selected i {
-  color: var(--color-primary);
+.club-select-card.selected .club-logo-img {
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 8px rgba(0, 255, 102, 0.6));
+}
+
+@media (max-width: 576px) {
+  .login-card {
+    padding: 22px 14px !important;
+    max-width: 95% !important;
+  }
+  .login-club-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    max-height: 230px !important;
+    gap: 8px !important;
+  }
+  .club-logo-wrapper {
+    width: 32px !important;
+    height: 32px !important;
+  }
 }

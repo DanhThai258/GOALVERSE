@@ -4,36 +4,36 @@ import { playClick, playSuccess, playFail, playWhistle, playCheer } from '../aud
 
 // Database of 30 top clubs
 const CLUBS_DB = [
-  { name: "Manchester United", wikiTitle: "Manchester United F.C.", league: "Premier League", country: "Anh", stadium: "Old Trafford", players: "Cristiano Ronaldo, Wayne Rooney, David Beckham" },
-  { name: "Real Madrid", wikiTitle: "Real Madrid CF", league: "La Liga", country: "Tây Ban Nha", stadium: "Santiago Bernabéu", players: "Zinedine Zidane, Cristiano Ronaldo, Raul Gonzalez" },
-  { name: "Barcelona", wikiTitle: "FC Barcelona", league: "La Liga", country: "Tây Ban Nha", stadium: "Spotify Camp Nou", players: "Lionel Messi, Ronaldinho, Andres Iniesta" },
-  { name: "Liverpool", wikiTitle: "Liverpool F.C.", league: "Premier League", country: "Anh", stadium: "Anfield", players: "Steven Gerrard, Mohamed Salah, Fernando Torres" },
-  { name: "Manchester City", wikiTitle: "Manchester City F.C.", league: "Premier League", country: "Anh", stadium: "Etihad Stadium", players: "Sergio Aguero, Kevin De Bruyne, David Silva" },
-  { name: "Arsenal", wikiTitle: "Arsenal F.C.", league: "Premier League", country: "Anh", stadium: "Emirates Stadium", players: "Thierry Henry, Dennis Bergkamp, Cesc Fabregas" },
-  { name: "Chelsea", wikiTitle: "Chelsea F.C.", league: "Premier League", country: "Anh", stadium: "Stamford Bridge", players: "Didier Drogba, Frank Lampard, Eden Hazard" },
-  { name: "Bayern Munich", wikiTitle: "FC Bayern Munich", league: "Bundesliga", country: "Đức", stadium: "Allianz Arena", players: "Arjen Robben, Franck Ribery, Robert Lewandowski" },
-  { name: "Paris Saint-Germain", wikiTitle: "Paris Saint-Germain F.C.", league: "Ligue 1", country: "Pháp", stadium: "Parc des Princes", players: "Kylian Mbappe, Neymar Jr, Zlatan Ibrahimovic" },
-  { name: "Juventus", wikiTitle: "Juventus F.C.", league: "Serie A", country: "Ý", stadium: "Allianz Stadium", players: "Alessandro Del Piero, Gianluigi Buffon, Pavel Nedved" },
-  { name: "Inter Milan", wikiTitle: "Inter Milan", league: "Serie A", country: "Ý", stadium: "San Siro", players: "Javier Zanetti, Ronaldo Nazario, Diego Milito" },
-  { name: "AC Milan", wikiTitle: "A.C. Milan", league: "Serie A", country: "Ý", stadium: "San Siro", players: "Paolo Maldini, Kaka, Andriy Shevchenko" },
-  { name: "Borussia Dortmund", wikiTitle: "Borussia Dortmund", league: "Bundesliga", country: "Đức", stadium: "Signal Iduna Park", players: "Marco Reus, Robert Lewandowski, Erling Haaland" },
-  { name: "Atletico Madrid", wikiTitle: "Atlético Madrid", league: "La Liga", country: "Tây Ban Nha", stadium: "Civitas Metropolitano", players: "Antoine Griezmann, Radamel Falcao, Fernando Torres" },
-  { name: "Tottenham Hotspur", wikiTitle: "Tottenham Hotspur F.C.", league: "Premier League", country: "Anh", stadium: "Tottenham Hotspur Stadium", players: "Harry Kane, Son Heung-min, Gareth Bale" },
-  { name: "Al Nassr", wikiTitle: "Al Nassr FC", league: "Saudi Pro League", country: "Saudi Arabia", stadium: "Al-Awwal Park", players: "Cristiano Ronaldo, Sadio Mane, Marcelo Brozovic" },
-  { name: "Inter Miami", wikiTitle: "Inter Miami CF", league: "MLS", country: "Mỹ", stadium: "Chase Stadium", players: "Lionel Messi, Luis Suarez, Sergio Busquets" },
-  { name: "Bayer Leverkusen", wikiTitle: "Bayer 04 Leverkusen", league: "Bundesliga", country: "Đức", stadium: "BayArena", players: "Michael Ballack, Florian Wirtz, Toni Kroos" },
-  { name: "AS Roma", wikiTitle: "A.S. Roma", league: "Serie A", country: "Ý", stadium: "Stadio Olimpico", players: "Francesco Totti, Daniele De Rossi, Gabriel Batistuta" },
-  { name: "Napoli", wikiTitle: "S.S.C. Napoli", league: "Serie A", country: "Ý", stadium: "Stadio Diego Armando Maradona", players: "Diego Maradona, Edinson Cavani, Victor Osimhen" },
-  { name: "Ajax", wikiTitle: "AFC Ajax", league: "Eredivisie", country: "Hà Lan", stadium: "Johan Cruyff ArenA", players: "Johan Cruyff, Luis Suarez, Zlatan Ibrahimovic" },
-  { name: "Boca Juniors", wikiTitle: "Club Atlético Boca Juniors", league: "Argentine Primera División", country: "Argentina", stadium: "La Bombonera", players: "Diego Maradona, Juan Roman Riquelme, Carlos Tevez" },
-  { name: "River Plate", wikiTitle: "Club Atlético River Plate", league: "Argentine Primera División", country: "Argentina", stadium: "El Monumental", players: "Enzo Francescoli, Hernan Crespo, Javier Saviola" },
-  { name: "Sporting CP", wikiTitle: "Sporting CP", league: "Liga Portugal", country: "Bồ Đào Nha", stadium: "Estádio José Alvalade", players: "Cristiano Ronaldo, Luis Figo, Bruno Fernandes" },
-  { name: "Benfica", wikiTitle: "S.L. Benfica", league: "Liga Portugal", country: "Bồ Đào Nha", stadium: "Estádio da Luz", players: "Eusebio, Rui Costa, Angel Di Maria" },
-  { name: "FC Porto", wikiTitle: "F.C. Porto", league: "Liga Portugal", country: "Bồ Đào Nha", stadium: "Estádio do Dragão", players: "Deco, Radamel Falcao, James Rodriguez" },
-  { name: "Marseille", wikiTitle: "Olympique de Marseille", league: "Ligue 1", country: "Pháp", stadium: "Stade Vélodrome", players: "Didier Drogba, Jean-Pierre Papin, Franck Ribery" },
-  { name: "Lyon", wikiTitle: "Olympique Lyonnais", league: "Ligue 1", country: "Pháp", stadium: "Groupama Stadium", players: "Juninho Pernambucano, Karim Benzema, Alexandre Lacazette" },
-  { name: "Al Hilal", wikiTitle: "Al-Hilal SFC", league: "Saudi Pro League", country: "Saudi Arabia", stadium: "Kingdom Arena", players: "Neymar Jr, Aleksandar Mitrovic, Kalidou Koulibaly" },
-  { name: "Aston Villa", wikiTitle: "Aston Villa F.C.", league: "Premier League", country: "Anh", stadium: "Villa Park", players: "Jack Grealish, Christian Benteke, Emiliano Martinez" }
+  { name: "Manchester United", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/10260.png", wikiTitle: "Manchester United F.C.", league: "Premier League", country: "Anh", stadium: "Old Trafford", players: "Cristiano Ronaldo, Wayne Rooney, David Beckham" },
+  { name: "Real Madrid", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8633.png", wikiTitle: "Real Madrid CF", league: "La Liga", country: "Tây Ban Nha", stadium: "Santiago Bernabéu", players: "Zinedine Zidane, Cristiano Ronaldo, Raul Gonzalez" },
+  { name: "Barcelona", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8634.png", wikiTitle: "FC Barcelona", league: "La Liga", country: "Tây Ban Nha", stadium: "Spotify Camp Nou", players: "Lionel Messi, Ronaldinho, Andres Iniesta" },
+  { name: "Liverpool", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8650.png", wikiTitle: "Liverpool F.C.", league: "Premier League", country: "Anh", stadium: "Anfield", players: "Steven Gerrard, Mohamed Salah, Fernando Torres" },
+  { name: "Manchester City", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8456.png", wikiTitle: "Manchester City F.C.", league: "Premier League", country: "Anh", stadium: "Etihad Stadium", players: "Sergio Aguero, Kevin De Bruyne, David Silva" },
+  { name: "Arsenal", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9825.png", wikiTitle: "Arsenal F.C.", league: "Premier League", country: "Anh", stadium: "Emirates Stadium", players: "Thierry Henry, Dennis Bergkamp, Cesc Fabregas" },
+  { name: "Chelsea", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8455.png", wikiTitle: "Chelsea F.C.", league: "Premier League", country: "Anh", stadium: "Stamford Bridge", players: "Didier Drogba, Frank Lampard, Eden Hazard" },
+  { name: "Bayern Munich", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9823.png", wikiTitle: "FC Bayern Munich", league: "Bundesliga", country: "Đức", stadium: "Allianz Arena", players: "Arjen Robben, Franck Ribery, Robert Lewandowski" },
+  { name: "Paris Saint-Germain", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9847.png", wikiTitle: "Paris Saint-Germain F.C.", league: "Ligue 1", country: "Pháp", stadium: "Parc des Princes", players: "Kylian Mbappe, Neymar Jr, Zlatan Ibrahimovic" },
+  { name: "Juventus", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9885.png", wikiTitle: "Juventus F.C.", league: "Serie A", country: "Ý", stadium: "Allianz Stadium", players: "Alessandro Del Piero, Gianluigi Buffon, Pavel Nedved" },
+  { name: "Inter Milan", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8636.png", wikiTitle: "Inter Milan", league: "Serie A", country: "Ý", stadium: "San Siro", players: "Javier Zanetti, Ronaldo Nazario, Diego Milito" },
+  { name: "AC Milan", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8564.png", wikiTitle: "A.C. Milan", league: "Serie A", country: "Ý", stadium: "San Siro", players: "Paolo Maldini, Kaka, Andriy Shevchenko" },
+  { name: "Borussia Dortmund", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9789.png", wikiTitle: "Borussia Dortmund", league: "Bundesliga", country: "Đức", stadium: "Signal Iduna Park", players: "Marco Reus, Robert Lewandowski, Erling Haaland" },
+  { name: "Atletico Madrid", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9906.png", wikiTitle: "Atlético Madrid", league: "La Liga", country: "Tây Ban Nha", stadium: "Civitas Metropolitano", players: "Antoine Griezmann, Radamel Falcao, Fernando Torres" },
+  { name: "Tottenham Hotspur", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8586.png", wikiTitle: "Tottenham Hotspur F.C.", league: "Premier League", country: "Anh", stadium: "Tottenham Hotspur Stadium", players: "Harry Kane, Son Heung-min, Gareth Bale" },
+  { name: "Al Nassr", logo: "https://r2.thesportsdb.com/images/media/team/badge/84yvqi1748524565.png", wikiTitle: "Al Nassr FC", league: "Saudi Pro League", country: "Saudi Arabia", stadium: "Al-Awwal Park", players: "Cristiano Ronaldo, Sadio Mane, Marcelo Brozovic" },
+  { name: "Inter Miami", logo: "https://r2.thesportsdb.com/images/media/team/badge/m4it3e1602103647.png", wikiTitle: "Inter Miami CF", league: "MLS", country: "Mỹ", stadium: "Chase Stadium", players: "Lionel Messi, Luis Suarez, Sergio Busquets" },
+  { name: "Bayer Leverkusen", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8178.png", wikiTitle: "Bayer 04 Leverkusen", league: "Bundesliga", country: "Đức", stadium: "BayArena", players: "Michael Ballack, Florian Wirtz, Toni Kroos" },
+  { name: "AS Roma", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8686.png", wikiTitle: "A.S. Roma", league: "Serie A", country: "Ý", stadium: "Stadio Olimpico", players: "Francesco Totti, Daniele De Rossi, Gabriel Batistuta" },
+  { name: "Napoli", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9875.png", wikiTitle: "S.S.C. Napoli", league: "Serie A", country: "Ý", stadium: "Stadio Diego Armando Maradona", players: "Diego Maradona, Edinson Cavani, Victor Osimhen" },
+  { name: "Ajax", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8593.png", wikiTitle: "AFC Ajax", league: "Eredivisie", country: "Hà Lan", stadium: "Johan Cruyff ArenA", players: "Johan Cruyff, Luis Suarez, Zlatan Ibrahimovic" },
+  { name: "Boca Juniors", logo: "https://r2.thesportsdb.com/images/media/team/badge/bm7krb1775741582.png", wikiTitle: "Club Atlético Boca Juniors", league: "Argentine Primera División", country: "Argentina", stadium: "La Bombonera", players: "Diego Maradona, Juan Roman Riquelme, Carlos Tevez" },
+  { name: "River Plate", logo: "https://r2.thesportsdb.com/images/media/team/badge/03dmi31645539717.png", wikiTitle: "Club Atlético River Plate", league: "Argentine Primera División", country: "Argentina", stadium: "El Monumental", players: "Enzo Francescoli, Hernan Crespo, Javier Saviola" },
+  { name: "Sporting CP", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9768.png", wikiTitle: "Sporting CP", league: "Liga Portugal", country: "Bồ Đào Nha", stadium: "Estádio José Alvalade", players: "Cristiano Ronaldo, Luis Figo, Bruno Fernandes" },
+  { name: "Benfica", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9772.png", wikiTitle: "S.L. Benfica", league: "Liga Portugal", country: "Bồ Đào Nha", stadium: "Estádio da Luz", players: "Eusebio, Rui Costa, Angel Di Maria" },
+  { name: "FC Porto", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9763.png", wikiTitle: "F.C. Porto", league: "Liga Portugal", country: "Bồ Đào Nha", stadium: "Estádio do Dragão", players: "Deco, Radamel Falcao, James Rodriguez" },
+  { name: "Marseille", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8592.png", wikiTitle: "Olympique de Marseille", league: "Ligue 1", country: "Pháp", stadium: "Stade Vélodrome", players: "Didier Drogba, Jean-Pierre Papin, Franck Ribery" },
+  { name: "Lyon", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9748.png", wikiTitle: "Olympique Lyonnais", league: "Ligue 1", country: "Pháp", stadium: "Groupama Stadium", players: "Juninho Pernambucano, Karim Benzema, Alexandre Lacazette" },
+  { name: "Al Hilal", logo: "https://r2.thesportsdb.com/images/media/team/badge/5trzvq1660439102.png", wikiTitle: "Al-Hilal SFC", league: "Saudi Pro League", country: "Saudi Arabia", stadium: "Kingdom Arena", players: "Neymar Jr, Aleksandar Mitrovic, Kalidou Koulibaly" },
+  { name: "Aston Villa", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/10252.png", wikiTitle: "Aston Villa F.C.", league: "Premier League", country: "Anh", stadium: "Villa Park", players: "Jack Grealish, Christian Benteke, Emiliano Martinez" }
 ];
 
 // Game State
@@ -197,6 +197,12 @@ function resetHintButton(btn, label, cost) {
 }
 
 function loadLogoImage() {
+  if (targetClub && targetClub.logo) {
+    currentLogoUrl = targetClub.logo;
+    displayLogo();
+    return;
+  }
+
   logoContainer.innerHTML = `
     <div class="logo-loading-spinner" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; height: 100%;">
       <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--color-primary);"></i>

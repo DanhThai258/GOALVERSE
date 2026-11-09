@@ -1,6 +1,7 @@
 {
   "name": "goalverse",
   "version": "1.0.0",
+  "type": "module",
   "description": "GoalVerse - Football Entertainment Hub & Mini Games",
   "main": "index.html",
   "scripts": {

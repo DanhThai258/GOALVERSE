@@ -1,6 +1,6 @@
 // GoalVerse Player Database Browser & Search Controller
 
-import { PLAYERS } from '../data.js';
+import { PLAYERS, PRESET_PLAYER_PHOTOS } from '../data.js';
 import { playClick } from '../audio.js';
 
 const PLAYERS_PER_PAGE = 12;
@@ -321,7 +321,66 @@ function openPlayerDetail(player) {
   modalElement.classList.add("active");
 }
 
+function isPlayerImageValid(pageTitle, imgUrl, playerName) {
+  if (!imgUrl) return false;
+  const t = (pageTitle || "").toLowerCase();
+  const u = (imgUrl || "").toLowerCase();
+  
+  // Reject club badges, stadiums, seasons, logos, islands, crests
+  if (t.includes("f.c.") || t.includes("fc ") || t.endsWith(" fc") || t.includes("club")) return false;
+  if (t.includes("stadium") || t.includes("season") || t.includes("island") || t.includes("league")) return false;
+  if (u.includes("_logo") || u.includes("logo.") || u.includes("crest") || u.includes("badge") || u.includes("coat_of_arms")) return false;
+
+  // If title is given, make sure it relates to the player's name
+  if (pageTitle && playerName) {
+    const normTitle = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const normName = playerName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const nameParts = normName.split(" ").filter(w => w.length > 2);
+    if (nameParts.length > 0 && !nameParts.some(p => normTitle.includes(p))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function getCachedPhoto(playerName) {
+  try {
+    const cache = JSON.parse(localStorage.getItem("goalverse_player_photos_cache") || "{}");
+    const url = cache[playerName] || null;
+    if (url && isPlayerImageValid("", url, playerName)) {
+      return url;
+    }
+    if (url) {
+      delete cache[playerName];
+      localStorage.setItem("goalverse_player_photos_cache", JSON.stringify(cache));
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setCachedPhoto(playerName, url) {
+  if (!url || !isPlayerImageValid("", url, playerName)) return;
+  try {
+    const cache = JSON.parse(localStorage.getItem("goalverse_player_photos_cache") || "{}");
+    cache[playerName] = url;
+    localStorage.setItem("goalverse_player_photos_cache", JSON.stringify(cache));
+  } catch (e) {}
+}
+
 function loadPlayerPhoto(playerName) {
+  // Check presets and cache first
+  if (PRESET_PLAYER_PHOTOS && PRESET_PLAYER_PHOTOS[playerName]) {
+    displayPhoto(PRESET_PLAYER_PHOTOS[playerName]);
+    return;
+  }
+  const cached = getCachedPhoto(playerName);
+  if (cached) {
+    displayPhoto(cached);
+    return;
+  }
+
   modalAvatar.innerHTML = `
     <div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--color-text-muted);">
       <i class="fa-solid fa-spinner fa-spin" style="font-size:24px;"></i>
@@ -332,21 +391,27 @@ function loadPlayerPhoto(playerName) {
   const directUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(playerName)}&prop=pageimages&format=json&pithumbsize=400&origin=*&pilicense=any&redirects=1`;
 
   fetch(directUrl)
-    .then(res => res.json())
-    .then(data => {
+    .then(res => res.text())
+    .then(text => {
+      if (!text.startsWith("{")) {
+        fetchSearchPhoto(playerName);
+        return;
+      }
+      const data = JSON.parse(text);
       let imgUrl = "";
       if (data && data.query && data.query.pages) {
         const pages = data.query.pages;
         const pageId = Object.keys(pages)[0];
-        if (pageId !== "-1" && pages[pageId].thumbnail) {
-          imgUrl = pages[pageId].thumbnail.source;
+        const pg = pages[pageId];
+        if (pageId !== "-1" && pg.thumbnail && isPlayerImageValid(pg.title, pg.thumbnail.source, playerName)) {
+          imgUrl = pg.thumbnail.source;
         }
       }
 
       if (imgUrl) {
+        setCachedPhoto(playerName, imgUrl);
         displayPhoto(imgUrl);
       } else {
-        // Fallback Search
         fetchSearchPhoto(playerName);
       }
     })
@@ -356,23 +421,28 @@ function loadPlayerPhoto(playerName) {
 }
 
 function fetchSearchPhoto(playerName) {
-  // Normalize diacritics for better search matching
-  const normalizedName = playerName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(normalizedName)}&gsrlimit=1&prop=pageimages&pithumbsize=400&origin=*&pilicense=any&redirects=1`;
+  const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(playerName + ' footballer')}&gsrlimit=3&prop=pageimages&pithumbsize=400&origin=*&pilicense=any&redirects=1`;
 
   fetch(searchUrl)
-    .then(res => res.json())
-    .then(data => {
+    .then(res => res.text())
+    .then(text => {
+      if (!text.startsWith("{")) {
+        displayFallbackPhoto();
+        return;
+      }
+      const data = JSON.parse(text);
       let imgUrl = "";
       if (data && data.query && data.query.pages) {
-        const pages = data.query.pages;
-        const pageId = Object.keys(pages)[0];
-        if (pageId !== "-1" && pages[pageId].thumbnail) {
-          imgUrl = pages[pageId].thumbnail.source;
+        for (const pg of Object.values(data.query.pages)) {
+          if (pg.thumbnail?.source && isPlayerImageValid(pg.title, pg.thumbnail.source, playerName)) {
+            imgUrl = pg.thumbnail.source;
+            break;
+          }
         }
       }
 
       if (imgUrl) {
+        setCachedPhoto(playerName, imgUrl);
         displayPhoto(imgUrl);
       } else {
         displayFallbackPhoto();
@@ -397,28 +467,43 @@ function displayFallbackPhoto() {
 }
 
 function loadMiniCardPhoto(playerName, container) {
-  // Set data-player attribute to verify later (race conditions prevention)
   container.setAttribute("data-player", playerName);
+
+  // Check presets and cache first - zero network delay!
+  if (PRESET_PLAYER_PHOTOS && PRESET_PLAYER_PHOTOS[playerName]) {
+    displayMiniPhoto(PRESET_PLAYER_PHOTOS[playerName], container, playerName);
+    return;
+  }
+  const cached = getCachedPhoto(playerName);
+  if (cached) {
+    displayMiniPhoto(cached, container, playerName);
+    return;
+  }
 
   // Standard Wikipedia image query with pithumbsize=150
   const directUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(playerName)}&prop=pageimages&format=json&pithumbsize=150&origin=*&pilicense=any&redirects=1`;
 
   fetch(directUrl)
-    .then(res => res.json())
-    .then(data => {
-      // Check if container is still expecting this player
+    .then(res => res.text())
+    .then(text => {
       if (container.getAttribute("data-player") !== playerName) return;
-
+      if (!text.startsWith("{")) {
+        fetchSearchMiniPhoto(playerName, container);
+        return;
+      }
+      const data = JSON.parse(text);
       let imgUrl = "";
       if (data && data.query && data.query.pages) {
         const pages = data.query.pages;
         const pageId = Object.keys(pages)[0];
-        if (pageId !== "-1" && pages[pageId].thumbnail) {
-          imgUrl = pages[pageId].thumbnail.source;
+        const pg = pages[pageId];
+        if (pageId !== "-1" && pg.thumbnail && isPlayerImageValid(pg.title, pg.thumbnail.source, playerName)) {
+          imgUrl = pg.thumbnail.source;
         }
       }
 
       if (imgUrl) {
+        setCachedPhoto(playerName, imgUrl);
         displayMiniPhoto(imgUrl, container, playerName);
       } else {
         fetchSearchMiniPhoto(playerName, container);
@@ -433,24 +518,29 @@ function loadMiniCardPhoto(playerName, container) {
 function fetchSearchMiniPhoto(playerName, container) {
   if (container.getAttribute("data-player") !== playerName) return;
 
-  const normalizedName = playerName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(normalizedName)}&gsrlimit=1&prop=pageimages&pithumbsize=150&origin=*&pilicense=any&redirects=1`;
+  const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(playerName + ' footballer')}&gsrlimit=3&prop=pageimages&pithumbsize=150&origin=*&pilicense=any&redirects=1`;
 
   fetch(searchUrl)
-    .then(res => res.json())
-    .then(data => {
+    .then(res => res.text())
+    .then(text => {
       if (container.getAttribute("data-player") !== playerName) return;
-
+      if (!text.startsWith("{")) {
+        displayMiniFallbackPhoto(container, playerName);
+        return;
+      }
+      const data = JSON.parse(text);
       let imgUrl = "";
       if (data && data.query && data.query.pages) {
-        const pages = data.query.pages;
-        const pageId = Object.keys(pages)[0];
-        if (pageId !== "-1" && pages[pageId].thumbnail) {
-          imgUrl = pages[pageId].thumbnail.source;
+        for (const pg of Object.values(data.query.pages)) {
+          if (pg.thumbnail?.source && isPlayerImageValid(pg.title, pg.thumbnail.source, playerName)) {
+            imgUrl = pg.thumbnail.source;
+            break;
+          }
         }
       }
 
       if (imgUrl) {
+        setCachedPhoto(playerName, imgUrl);
         displayMiniPhoto(imgUrl, container, playerName);
       } else {
         displayMiniFallbackPhoto(container, playerName);

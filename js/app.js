@@ -74,6 +74,23 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   });
 
+  // Login: Real-time Club Search Filter
+  const clubSearchInput = document.getElementById("login-club-search");
+  if (clubSearchInput) {
+    clubSearchInput.oninput = () => {
+      const q = clubSearchInput.value.toLowerCase().trim();
+      clubCards.forEach(card => {
+        const clubName = (card.getAttribute("data-club") || "").toLowerCase();
+        const displayName = card.textContent.toLowerCase();
+        if (clubName.includes(q) || displayName.includes(q)) {
+          card.style.display = "flex";
+        } else {
+          card.style.display = "none";
+        }
+      });
+    };
+  }
+
   // Login: Submit Login Form
   const loginSubmitBtn = document.getElementById("btn-login-submit");
   loginSubmitBtn.onclick = () => {
@@ -161,6 +178,34 @@ document.addEventListener("DOMContentLoaded", () => {
         userState.isLoggedIn = false;
         localStorage.setItem("goalverse_user_state", JSON.stringify(userState));
         window.location.reload();
+      }
+    };
+  }
+
+  // Profile & Theme Customizer Modal handlers
+  const profileWidget = document.getElementById("user-profile-widget");
+  const profileModal = document.getElementById("modal-user-profile");
+  const closeProfileBtn = document.getElementById("btn-close-profile-modal");
+
+  if (profileWidget && profileModal) {
+    profileWidget.onclick = () => {
+      playClick();
+      renderProfileModalThemes();
+      profileModal.classList.add("active");
+    };
+  }
+
+  if (closeProfileBtn && profileModal) {
+    closeProfileBtn.onclick = () => {
+      playClick();
+      profileModal.classList.remove("active");
+    };
+  }
+
+  if (profileModal) {
+    profileModal.onclick = (e) => {
+      if (e.target === profileModal) {
+        profileModal.classList.remove("active");
       }
     };
   }
@@ -490,7 +535,111 @@ function initWheel() {
   };
 }
 
-// Shop Rendering has been replaced by Player Database
+// User Profile & Card Themes Customizer Modal
+function renderProfileModalThemes() {
+  const modalAvatar = document.getElementById("modal-user-avatar-shell");
+  const modalInitial = document.getElementById("modal-avatar-initial");
+  const modalLevel = document.getElementById("modal-user-level");
+  const modalName = document.getElementById("modal-user-name");
+  const modalClub = document.getElementById("modal-user-club");
+  const modalCoins = document.getElementById("modal-user-coins");
+  const modalXp = document.getElementById("modal-user-xp");
+  const themesGrid = document.getElementById("themes-selector-grid");
+
+  if (!themesGrid) return;
+
+  // Sync profile info
+  if (modalInitial) modalInitial.textContent = userState.username ? userState.username.charAt(0).toUpperCase() : "U";
+  if (modalLevel) modalLevel.textContent = userState.level;
+  if (modalName) modalName.textContent = userState.username ? `HLV ${userState.username}` : "HLV Cổ Động Viên";
+  if (modalClub) modalClub.textContent = userState.favClub || "Chưa chọn CLB";
+  if (modalCoins) modalCoins.textContent = userState.coins;
+  if (modalXp) modalXp.textContent = `${userState.xp} / ${userState.level * 800}`;
+
+  // Apply current active theme to modal avatar shell
+  const curTheme = CARD_THEMES.find(t => t.id === userState.activeTheme) || CARD_THEMES[0];
+  if (modalAvatar) {
+    modalAvatar.style.background = curTheme.bg;
+    modalAvatar.style.backgroundImage = curTheme.border;
+    modalAvatar.style.borderColor = curTheme.id === 'gold' ? '#ffb703' : 'transparent';
+    modalAvatar.style.boxShadow = `0 0 15px ${curTheme.glow}`;
+    if (curTheme.anim === 'rainbow-border') {
+      modalAvatar.classList.add('rainbow-border');
+    } else {
+      modalAvatar.classList.remove('rainbow-border');
+    }
+  }
+
+  // Ensure ownedThemes has at least 'gold'
+  if (!userState.ownedThemes || !Array.isArray(userState.ownedThemes)) {
+    userState.ownedThemes = ["gold"];
+  }
+
+  themesGrid.innerHTML = "";
+
+  CARD_THEMES.forEach(theme => {
+    const isEquipped = userState.activeTheme === theme.id;
+    const isOwned = userState.ownedThemes.includes(theme.id) || theme.id === "gold";
+
+    const card = document.createElement("div");
+    card.className = `theme-card-option ${isEquipped ? 'active' : ''}`;
+
+    let actionBtnHtml = "";
+    if (isEquipped) {
+      actionBtnHtml = `<button class="theme-action-btn btn-equipped" disabled>✓ ĐANG DÙNG</button>`;
+    } else if (isOwned) {
+      actionBtnHtml = `<button class="theme-action-btn btn-equip" data-theme="${theme.id}">TRANG BỊ</button>`;
+    } else {
+      actionBtnHtml = `<button class="theme-action-btn btn-buy" data-theme="${theme.id}" data-cost="${theme.cost}"><i class="fa-solid fa-coins"></i> ${theme.cost} COINS</button>`;
+    }
+
+    card.innerHTML = `
+      <div class="theme-card-preview ${theme.anim || ''}" style="background: ${theme.bg}; background-image: ${theme.border}; border: 2px solid ${theme.glow || '#fff'}; box-shadow: 0 0 10px ${theme.glow}; color: ${theme.color};">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div class="theme-name">${theme.name}</div>
+      <div style="font-size: 10px; color: var(--color-text-muted);">${theme.cost === 0 ? 'Mặc định' : `${theme.cost} Coins`}</div>
+      ${actionBtnHtml}
+    `;
+
+    // Bind action events
+    const equipBtn = card.querySelector(".btn-equip");
+    if (equipBtn) {
+      equipBtn.onclick = () => {
+        playClick();
+        userState.activeTheme = theme.id;
+        saveState();
+        updateHeaderUI();
+        renderProfileModalThemes();
+      };
+    }
+
+    const buyBtn = card.querySelector(".btn-buy");
+    if (buyBtn) {
+      buyBtn.onclick = () => {
+        playClick();
+        if (userState.coins < theme.cost) {
+          alert(`Bạn cần thêm ${theme.cost - userState.coins} Coins nữa để mở khóa giao diện ${theme.name}! Hãy chơi các mini game để kiếm thêm Coins.`);
+          return;
+        }
+
+        userState.coins -= theme.cost;
+        if (!userState.ownedThemes.includes(theme.id)) {
+          userState.ownedThemes.push(theme.id);
+        }
+        userState.activeTheme = theme.id; // Tự động trang bị sau khi mua
+        saveState();
+        updateHeaderUI();
+        renderProfileModalThemes();
+        playSuccess();
+        triggerConfetti();
+        alert(`Chúc mừng! Bạn đã mở khóa và trang bị thành công chủ đề: ${theme.name}!`);
+      };
+    }
+
+    themesGrid.appendChild(card);
+  });
+}
 
 // Leaderboard Renders
 function renderLeaderboard() {
@@ -500,20 +649,26 @@ function renderLeaderboard() {
   // Read all local player profiles from localStorage
   const localLeaderboard = JSON.parse(localStorage.getItem("goalverse_leaderboard") || "[]");
 
-  if (localLeaderboard.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" class="text-center" style="color: var(--color-text-muted); padding: 30px;">
-          <i class="fa-solid fa-users-slash" style="font-size: 32px; margin-bottom: 10px; display: block;"></i>
-          Chưa có tài khoản nào đăng ký trên thiết bị này.
-        </td>
-      </tr>
-    `;
-    return;
-  }
+  // Default iconic rival managers to make the leaderboard competitive and lively
+  const RIVAL_MANAGERS = [
+    { name: "Pep Guardiola", favClub: "Manchester City", level: 12, coins: 4500, xp: 620, activeTheme: "rainbow" },
+    { name: "Carlo Ancelotti", favClub: "Real Madrid", level: 10, coins: 3800, xp: 450, activeTheme: "icon" },
+    { name: "Jürgen Klopp", favClub: "Liverpool", level: 9, coins: 3200, xp: 300, activeTheme: "totw" },
+    { name: "José Mourinho", favClub: "AS Roma", level: 8, coins: 2900, xp: 550, activeTheme: "future" },
+    { name: "Zinedine Zidane", favClub: "Real Madrid", level: 7, coins: 2400, xp: 180, activeTheme: "icon" },
+    { name: "Mikel Arteta", favClub: "Arsenal", level: 6, coins: 1800, xp: 400, activeTheme: "gold" }
+  ];
+
+  // Combine local profiles with rivals (avoid name collision)
+  const combinedList = [...localLeaderboard];
+  RIVAL_MANAGERS.forEach(rival => {
+    if (!combinedList.some(p => p.name.toLowerCase() === rival.name.toLowerCase())) {
+      combinedList.push(rival);
+    }
+  });
 
   // Sort profiles descending by cumulative XP: (Level - 1) * 800 + activeXP
-  const sortedList = [...localLeaderboard].sort((a, b) => {
+  const sortedList = combinedList.sort((a, b) => {
     const totalXPA = ((a.level || 1) - 1) * 800 + (a.xp || 0);
     const totalXPB = ((b.level || 1) - 1) * 800 + (b.xp || 0);
     return totalXPB - totalXPA;

@@ -1,6 +1,6 @@
 // GoalVerse Guess the Player via Blurred Card Mini-Game Controller
 
-import { PLAYERS, CARD_THEMES } from '../data.js';
+import { PLAYERS, CARD_THEMES, PRESET_PLAYER_PHOTOS } from '../data.js';
 import { playSuccess, playFail, playClick } from '../audio.js';
 
 let targetPlayer = null;
@@ -101,52 +101,163 @@ export function initReveal(addRewardsFn, deductCoinsFn, getCoinsFn) {
   startNewGame();
 }
 
-async function fetchPlayerImage(playerName) {
-  // Chiến thuật 1: Truy cập trực tiếp theo tiêu đề có xử lý redirects=1 (cho các tên trùng khớp hoặc chuyển hướng)
-  let url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&titles=${encodeURIComponent(playerName)}&pithumbsize=300&origin=*&pilicense=any&redirects=1`;
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data && data.query && data.query.pages) {
-      const pages = data.query.pages;
-      const pageId = Object.keys(pages)[0];
-      if (pageId !== "-1" && pages[pageId].thumbnail) {
-        return pages[pageId].thumbnail.source;
-      }
+function isPlayerImageValid(pageTitle, imgUrl, playerName) {
+  if (!imgUrl) return false;
+  const t = (pageTitle || "").toLowerCase();
+  const u = (imgUrl || "").toLowerCase();
+  
+  // Reject club badges, stadiums, seasons, logos, islands, crests
+  if (t.includes("f.c.") || t.includes("fc ") || t.endsWith(" fc") || t.includes("club")) return false;
+  if (t.includes("stadium") || t.includes("season") || t.includes("island") || t.includes("league")) return false;
+  if (u.includes("_logo") || u.includes("logo.") || u.includes("crest") || u.includes("badge") || u.includes("coat_of_arms")) return false;
+
+  // If title is given, make sure it relates to the player's name
+  if (pageTitle && playerName) {
+    const normTitle = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const normName = playerName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const nameParts = normName.split(" ").filter(w => w.length > 2);
+    if (nameParts.length > 0 && !nameParts.some(p => normTitle.includes(p))) {
+      return false;
     }
-  } catch (e) {
-    console.error("Wikipedia direct load failed for:", playerName, e);
+  }
+  return true;
+}
+
+function cachePhoto(name, url) {
+  try {
+    const cache = JSON.parse(localStorage.getItem("goalverse_player_photos_cache") || "{}");
+    cache[name] = url;
+    localStorage.setItem("goalverse_player_photos_cache", JSON.stringify(cache));
+  } catch (err) {}
+}
+
+async function getPlayerPhoto(player) {
+  if (!player) return null;
+  const name = typeof player === "string" ? player : player.name;
+
+  // 1. Direct verified static preset photo
+  if (PRESET_PLAYER_PHOTOS && PRESET_PLAYER_PHOTOS[name]) {
+    return PRESET_PLAYER_PHOTOS[name];
   }
 
-  // Chiến thuật 2: Sử dụng Search Generator (tìm kiếm bài viết khớp nhất, giải quyết lỗi thiếu dấu hoặc sai chính tả nhẹ)
-  url = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(playerName)}&gsrlimit=1&prop=pageimages&pithumbsize=300&origin=*&pilicense=any&redirects=1`;
+  // 2. Persistent localStorage cache (with logo-pollution check)
   try {
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data && data.query && data.query.pages) {
-      const pages = data.query.pages;
-      const pageId = Object.keys(pages)[0];
-      if (pageId !== "-1" && pages[pageId].thumbnail) {
-        return pages[pageId].thumbnail.source;
+    const cache = JSON.parse(localStorage.getItem("goalverse_player_photos_cache") || "{}");
+    if (cache[name]) {
+      if (isPlayerImageValid("", cache[name], name)) {
+        return cache[name];
+      } else {
+        delete cache[name];
+        localStorage.setItem("goalverse_player_photos_cache", JSON.stringify(cache));
       }
     }
-  } catch (e) {
-    console.error("Wikipedia search query failed for:", playerName, e);
+  } catch (e) {}
+
+  // 3. PRIORITY 1: Direct title query (e.g. titles=Lucas_Paqueta). Directly targets the player page!
+  const directTitleUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&titles=${encodeURIComponent(name)}&pithumbsize=300&origin=*&pilicense=any&redirects=1`;
+  try {
+    const res = await fetch(directTitleUrl);
+    if (res.ok) {
+      const text = await res.text();
+      if (text.startsWith("{")) {
+        const data = JSON.parse(text);
+        const pages = data?.query?.pages || {};
+        const firstPage = Object.values(pages)[0];
+        if (firstPage && firstPage.thumbnail?.source && isPlayerImageValid(firstPage.title, firstPage.thumbnail.source, name)) {
+          const foundUrl = firstPage.thumbnail.source;
+          cachePhoto(name, foundUrl);
+          return foundUrl;
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 4. PRIORITY 2: Search generator with strict validation against club/logo hijacking
+  const queries = [
+    `${name} footballer`,
+    name
+  ];
+  if (typeof player === "object" && player.club) {
+    queries.push(`${player.name} ${player.club}`);
+  }
+  const normalized = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (normalized !== name) {
+    queries.push(`${normalized} footballer`);
+  }
+
+  for (const q of queries) {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=3&prop=pageimages&pithumbsize=300&origin=*&pilicense=any&redirects=1`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const text = await res.text();
+      // Handle rate limits or non-JSON responses gracefully
+      if (text.includes("You are making too many requests") || !text.startsWith("{")) {
+        console.warn("Wikipedia API rate limited:", q);
+        break;
+      }
+      const data = JSON.parse(text);
+      if (data?.query?.pages) {
+        for (const pg of Object.values(data.query.pages)) {
+          if (pg.thumbnail?.source && isPlayerImageValid(pg.title, pg.thumbnail.source, name)) {
+            const foundUrl = pg.thumbnail.source;
+            cachePhoto(name, foundUrl);
+            return foundUrl;
+          }
+        }
+      }
+    } catch (e) {
+      // Continue to next query if network or JSON error
+    }
   }
 
   return null;
 }
 
-async function getPlayerPhoto(playerName) {
-  let url = await fetchPlayerImage(playerName);
-  if (!url) {
-    // Thử tìm theo tên không dấu (chuẩn hóa diacritics)
-    const normalizedName = playerName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    if (normalizedName !== playerName) {
-      url = await fetchPlayerImage(normalizedName);
+function loadTargetPlayerPhoto(player) {
+  const currentPlayerId = player.id;
+
+  getPlayerPhoto(player).then(imgUrl => {
+    if (targetPlayer.id !== currentPlayerId) return;
+
+    if (imgUrl) {
+      const currentBlur = gameOver ? 0 : BLUR_STEPS[guessesRemaining].value;
+      avatarImg.innerHTML = `
+        <img id="reveal-target-img" class="reveal-target-img" src="${imgUrl}" referrerpolicy="no-referrer" style="filter: blur(${currentBlur}px); -webkit-filter: blur(${currentBlur}px);" alt="Cầu thủ bí ẩn">
+      `;
+      const imgEl = document.getElementById("reveal-target-img");
+      if (imgEl) {
+        imgEl.onerror = () => {
+          renderCardFallback();
+        };
+      }
+    } else {
+      renderCardFallback();
     }
+  });
+}
+
+function renderCardFallback() {
+  avatarImg.style.filter = "none";
+  avatarImg.style.webkitFilter = "none";
+  avatarImg.innerHTML = `
+    <div class="reveal-fallback-silhouette">
+      <i class="fa-solid fa-shirt reveal-fallback-icon"></i>
+      <div style="font-size: 11px; color: var(--color-text-muted); line-height: 1.4;">
+        Ảnh cầu thủ chưa sẵn sàng từ máy chủ.<br>Bạn có thể đoán bằng manh mối hoặc đổi sang cầu thủ khác!
+      </div>
+      <button class="reveal-fallback-reroll-btn" id="btn-reveal-auto-reroll">
+        <i class="fa-solid fa-shuffle"></i> Đổi Cầu Thủ Khác
+      </button>
+    </div>
+  `;
+  const rerollBtn = document.getElementById("btn-reveal-auto-reroll");
+  if (rerollBtn) {
+    rerollBtn.onclick = () => {
+      playClick();
+      startNewGame();
+    };
   }
-  return url;
 }
 
 function startNewGame() {
@@ -177,18 +288,17 @@ function startNewGame() {
   resetHintButton(btnHintLeague, '<span class="hint-label"><i class="fa-solid fa-earth-americas"></i> Giải đấu</span><span class="hint-cost font-numeric">-25 Coins</span>');
   resetHintButton(btnHintClub, '<span class="hint-label"><i class="fa-solid fa-shield-halved"></i> CLB Chủ quản</span><span class="hint-cost font-numeric">-30 Coins</span>');
 
-  // Show loading spinner
-  avatarImg.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; color: var(--color-primary);"></i>';
+  // Reset container blur filter - container must remain clean and unblurred!
+  avatarImg.style.filter = 'none';
+  avatarImg.style.webkitFilter = 'none';
 
-  const currentPlayerId = targetPlayer.id;
-  getPlayerPhoto(targetPlayer.name).then(imgUrl => {
-    if (targetPlayer.id !== currentPlayerId) return;
-    if (imgUrl) {
-      avatarImg.innerHTML = `<img src="${imgUrl}" referrerpolicy="no-referrer" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;">`;
-    } else {
-      avatarImg.innerHTML = '<i class="fa-solid fa-user-ninja"></i>';
-    }
-  });
+  // Show clean crisp loading spinner
+  avatarImg.innerHTML = `
+    <div class="reveal-loading-box">
+      <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 32px; color: var(--color-primary);"></i>
+      <span style="font-size: 11px; color: var(--color-text-muted); margin-top: 8px;">Đang tải ảnh cầu thủ...</span>
+    </div>
+  `;
 
   // Apply card theme to player card
   applyCardTheme();
@@ -200,6 +310,9 @@ function startNewGame() {
   // Draw masked card info
   updateCardUI();
   updateStatsUI();
+
+  // Load photo
+  loadTargetPlayerPhoto(targetPlayer);
 }
 
 function resetHintButton(btn, originalHtml) {
@@ -267,10 +380,13 @@ function updateCardUI() {
     ? `<i class="fa-solid fa-shield-halved"></i> ${targetPlayer.club}`
     : `<i class="fa-solid fa-shield-halved"></i> ???`;
 
-  // Apply filter blur
-  const currentBlur = gameOver ? 0 : BLUR_STEPS[guessesRemaining].value;
-  avatarImg.style.filter = `blur(${currentBlur}px)`;
-  avatarImg.style.webkitFilter = `blur(${currentBlur}px)`;
+  // Apply filter blur to image element specifically
+  const imgEl = document.getElementById("reveal-target-img");
+  if (imgEl) {
+    const currentBlur = gameOver ? 0 : BLUR_STEPS[guessesRemaining].value;
+    imgEl.style.filter = `blur(${currentBlur}px)`;
+    imgEl.style.webkitFilter = `blur(${currentBlur}px)`;
+  }
 }
 
 function updateStatsUI() {
@@ -395,8 +511,8 @@ function submitGuess() {
     }
 
     // Reveal completely
-    avatarImg.style.filter = "blur(0px)";
-    avatarImg.style.webkitFilter = "blur(0px)";
+    avatarImg.style.filter = "none";
+    avatarImg.style.webkitFilter = "none";
     updateCardUI();
 
     playSuccess();
@@ -425,8 +541,8 @@ function submitGuess() {
     } else {
       // GAME OVER
       gameOver = true;
-      avatarImg.style.filter = "blur(0px)";
-      avatarImg.style.webkitFilter = "blur(0px)";
+      avatarImg.style.filter = "none";
+      avatarImg.style.webkitFilter = "none";
       updateCardUI();
       updateStatsUI();
 
